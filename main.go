@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/nombiezinja/token-getter/httprutils"
 )
 
 func GetCredentials() {
@@ -34,26 +36,28 @@ func main() {
 		}
 	}()
 
-		GetCredentials()
-// 	https://www.facebook.com/v3.2/dialog/oauth?
-//   client_id={app-id}
-//   &redirect_uri={redirect-uri}
-//   &state={state-param}
-
-	request := httprutils.Request{
+	GetCredentials()
+	// 	https://www.facebook.com/v3.2/dialog/oauth?
+	//   client_id={app-id}
+	//   &redirect_uri={redirect-uri}
+	//   &state={state-param}
+	//FB wants https for redirect_uri, use hardcoded Ngrok for now
+	// next steps: add logic or call bash script to download Ngrok and call it from inside code?
+	redirectUri := "https://0a371f64.ngrok.io"
+	req := httprutils.Request{
 		Method: httprutils.Post,
-		URL	"https://www.facebook.com/v3.2/dialog/oauth?client_id={app-id}&redirect_uri={redirect-uri}&state={state-param}",
+		URL:    "https://www.facebook.com/v3.2/dialog/oauth",
 		Headers: map[string]string{
-			"content-Type":       "application/json",
+			"content-Type": "application/json",
 		},
 		QueryParams: map[string]string{
-			"apiKey":          os.Getenv("APIKEY"),
-			"verificationurl": verificationURL,
-			"emailtemplate":   emailTemplate,
-			"options":         options,
+			"redirect_uri": redirectUri,
+			"state":        "placeholder",
+			"client_id":    os.Getenv("FBAPPID"),
 		},
-		Body: requestBody,
-
+	}
+	resp, err := httprutils.TimeoutClient.Send(req)
+	fmt.Println(resp.Body, err)
 	graceful(hs, logger, 5*time.Second)
 }
 
